@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { SectionCard, CardTitle } from "@/components/ui/SectionCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BadgeDelta } from "@tremor/react";
 import { AreaChartWrapper } from "@/components/charts/AreaChartWrapper";
 import { BarChart, Bar, XAxis, YAxis, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ALERTS_DATA, AGENTS, PIE_DATA } from "@/data/mockData";
@@ -8,7 +9,6 @@ import { cn } from "@/lib/utils";
 import {
   DollarSign, Users, Eye, Zap,
   AlertTriangle, ChevronRight, TrendingUp,
-  ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3002";
@@ -33,65 +33,6 @@ function Sparkline({ data = [], color = TEAL, width = 72, height = 24 }) {
       <polyline points={pts.join(" ")} fill="none" stroke={color} strokeWidth="1.5"
         strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  );
-}
-
-// ── Trend badge ─────────────────────────────────────────────────────────────
-function TrendBadge({ value }) {
-  if (value === undefined || value === null) return null;
-  const up   = value > 0;
-  const zero = value === 0;
-  const color = zero ? "hsl(var(--muted-foreground))" : up ? TEAL : ORANGE;
-  const Icon  = up ? ArrowUpRight : ArrowDownRight;
-  return (
-    <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold tabular-nums" style={{ color }}>
-      {!zero && <Icon size={11} strokeWidth={2.5} />}
-      {zero ? "–" : `${up ? "+" : ""}${value}%`}
-    </span>
-  );
-}
-
-// ── Revenue card — PRIMARY, ukuran dominan ──────────────────────────────────
-function RevenueCard({ title, value, sub, sparkline, trend }) {
-  return (
-    <div className="col-span-2 rounded-xl border p-5 flex flex-col gap-4 bg-card hover:border-white/10 transition-colors duration-150"
-      style={{ borderColor: "hsl(var(--border))" }}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
-          <p className="text-[40px] font-semibold leading-none tabular-nums" style={{ color: TEAL }}>
-            {value}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2 pt-0.5">
-          <TrendBadge value={trend} />
-          <Sparkline data={sparkline} color={TEAL} width={80} height={28} />
-        </div>
-      </div>
-      <div className="flex items-center gap-2 pt-1 border-t" style={{ borderColor: "hsl(var(--border))" }}>
-        <DollarSign size={11} className="text-muted-foreground shrink-0" />
-        <span className="text-[11px] text-muted-foreground">{sub}</span>
-      </div>
-    </div>
-  );
-}
-
-// ── KPI card kecil ──────────────────────────────────────────────────────────
-function KpiCard({ icon: Icon, title, value, sub, color = TEAL }) {
-  return (
-    <div className="rounded-xl border p-4 flex flex-col gap-3 bg-card hover:border-white/10 transition-colors duration-150"
-      style={{ borderColor: "hsl(var(--border))" }}>
-      <div className="flex items-center justify-between">
-        <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
-        {Icon && (
-          <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center" style={{ background: `${color}18` }}>
-            <Icon size={11} strokeWidth={1.5} style={{ color }} />
-          </div>
-        )}
-      </div>
-      <p className="text-[28px] font-semibold leading-none tabular-nums text-foreground">{value ?? "–"}</p>
-      <p className="text-[11px] text-muted-foreground leading-tight">{sub}</p>
-    </div>
   );
 }
 
@@ -187,31 +128,32 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
     return () => clearInterval(t);
   }, [gscSiteUrl, dateRange]);
 
-  const statusMap   = { 0:["Paused","#555"], 1:["Checking","#888"], 2:["UP",TEAL], 8:["Seems Down",ORANGE], 9:["DOWN","#ef4444"] };
-  const [statusLabel, uptimeColor] = uptimeData ? (statusMap[uptimeData.status] || ["Unknown","#555"]) : ["–", TEAL];
-  const ratios    = uptimeData?.custom_uptime_ratio?.split("-") || [];
-  const uptime30  = ratios[2] ? parseFloat(ratios[2]).toFixed(2) + "%" : "–";
+  const statusMap   = { 0:['Paused','#555'], 1:['Checking','#888'], 2:['UP',TEAL], 8:['Seems Down',ORANGE], 9:['DOWN','#ef4444'] };
+  const [statusLabel, uptimeColor] = uptimeData ? (statusMap[uptimeData.status] || ['Unknown','#555']) : ['–', TEAL];
+  const ratios    = uptimeData?.custom_uptime_ratio?.split('-') || [];
+  const uptime30  = ratios[2] ? parseFloat(ratios[2]).toFixed(2) + '%' : '–';
   const avgMs     = uptimeData?.response_times?.length
     ? Math.round(uptimeData.response_times.reduce((s, r) => s + r.value, 0) / uptimeData.response_times.length) : null;
 
   const revenue       = revenueData?.revenue || 0;
   const transactions  = revenueData?.transactions || 0;
   const revenueChange = revenueData?.change ?? null;
-  const miniCourse    = studentsData?.courses?.find(c => c.name?.includes("Mini Course") || c.name?.includes("Arsitek"));
-  const lmsMiniCourse = lmsData?.courses?.find(c => c.name?.includes("Mini Course") || c.name?.includes("Arsitek"));
-  const newStudents   = dateRange === "1" ? (miniCourse?.today ?? 0) : dateRange === "7" ? (miniCourse?.thisWeek ?? 0) : (miniCourse?.total ?? 0);
+  const miniCourse    = studentsData?.courses?.find(c => c.name?.includes('Mini Course') || c.name?.includes('Arsitek'));
+  const lmsMiniCourse = lmsData?.courses?.find(c => c.name?.includes('Mini Course') || c.name?.includes('Arsitek'));
+  const newStudents   = dateRange === '1' ? (miniCourse?.today ?? 0) : dateRange === '7' ? (miniCourse?.thisWeek ?? 0) : (miniCourse?.total ?? 0);
   const totalStudents = miniCourse?.total ?? studentsData?.totalStudents ?? 0;
   const miniRating    = lmsMiniCourse?.rating || 0;
   const miniRatingCount = lmsMiniCourse?.ratingCount || 0;
   const maxProductRev = products[0]?.revenue || 1;
-  const revSparkline  = weeklyData.slice(-7).map(d => d.rev || 0);
+  const deltaType = (value) => value > 0 ? "moderateIncrease" : "moderateDecrease";
+  const sampleSparkline = [10, 20, 40, 30, 50, 70, 80];
 
   return (
     <div className="flex flex-col gap-4">
 
       {/* ── Alert Banner ── */}
       {highAlerts.length > 0 && (
-        <button onClick={() => onNavigate?.("alerts")}
+        <button onClick={() => onNavigate?.('alerts')}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border text-left transition-all duration-150 hover:brightness-110"
           style={{ background: "rgba(255,107,53,0.07)", borderColor: "rgba(255,107,53,0.25)" }}>
           <AlertTriangle size={13} style={{ color: ORANGE, flexShrink: 0 }} strokeWidth={1.5} />
@@ -225,30 +167,89 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
         </button>
       )}
 
-      {/* ── Row 1: Revenue (col-span-2, 40%) + 3 KPI kecil (masing-masing 20%) ── */}
+      {/* ── Row 1: Revenue (col-span-2) + 3 KPI cards (col-span-1 each) ── */}
       <div className="grid grid-cols-5 gap-3">
-        <RevenueCard
-          title={`Revenue ${rangeLabel}`}
-          value={revenue > 0 ? formatRpCompact(revenue) : "Rp 0"}
-          sub={`${transactions} transaksi`}
-          sparkline={revSparkline}
-          trend={revenueChange}
-        />
-        <KpiCard icon={Users} title="Siswa Mini Course"
-          value={newStudents || "–"} sub={miniRating > 0 ? `${totalStudents} total · ⭐ ${miniRating.toFixed(1)} (${miniRatingCount})` : `${totalStudents} total`} />
-        <KpiCard icon={Eye} title="Pengguna"
-          value={ga4PropertyId ? ga4Data.users.toLocaleString("id-ID") : "–"}
-          sub={ga4PropertyId ? `${ga4Data.sessions} sessions` : "Sambungkan GA4"} />
-        <KpiCard icon={Zap} title="Uptime 30d"
-          value={apiKey ? (uptimeData ? uptime30 : "…") : "–"}
-          sub={apiKey ? (avgMs ? `${statusLabel} · ${avgMs}ms` : statusLabel) : "Sambungkan UptimeRobot"}
-          color={uptimeColor} />
+      <Card className="col-span-2 relative overflow-hidden" style={{ backgroundImage: 'radial-gradient(ellipse at top right, rgba(78,205,196,0.15) 0%, transparent 50%)', height: '120px' }}>
+        <CardContent className="p-4 h-full flex flex-col justify-between">
+          <div className="flex items-start justify-between">
+            <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wide">{`Revenue ${rangeLabel}`}</p>
+            {revenueChange !== null && <BadgeDelta deltaType={deltaType(revenueChange)}>{`${revenueChange}%`}</BadgeDelta>}
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-[48px] font-bold leading-none tabular-nums" style={{ color: TEAL }}>
+                {revenue > 0 ? formatRpCompact(revenue) : "Rp 0"}
+              </p>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <DollarSign size={11} className="shrink-0" />
+                <span className="text-[11px]">{`${transactions} transaksi`}</span>
+              </div>
+            </div>
+            <Sparkline data={sampleSparkline} color={TEAL} width={80} height={32} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <div className="flex items-center justify-between">
+              <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wide">Siswa Mini Course</p>
+              <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center" style={{ background: `${TEAL}18` }}>
+                <Users size={11} strokeWidth={1.5} style={{ color: TEAL }} />
+              </div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold leading-none tabular-nums text-foreground">{newStudents || "–"}</p>
+          <p className="text-[11px] text-muted-foreground leading-tight">{miniRating > 0 ? `${totalStudents} total · ⭐ ${miniRating.toFixed(1)} (${miniRatingCount})` : `${totalStudents} total`}</p>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <div className="flex items-center justify-between">
+              <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wide">Pengguna</p>
+              <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center" style={{ background: `${TEAL}18` }}>
+                <Eye size={11} strokeWidth={1.5} style={{ color: TEAL }} />
+              </div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold leading-none tabular-nums text-foreground">{ga4PropertyId ? ga4Data.users.toLocaleString("id-ID") : "–"}</p>
+          <p className="text-[11px] text-muted-foreground leading-tight">{ga4PropertyId ? `${ga4Data.sessions} sessions` : "Sambungkan GA4"}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <div className="flex items-center justify-between">
+              <p className="text-[10.5px] font-medium text-muted-foreground uppercase tracking-wide">Uptime 30d</p>
+              <div className="w-[22px] h-[22px] rounded-md flex items-center justify-center" style={{ background: `${uptimeColor}18` }}>
+                <Zap size={11} strokeWidth={1.5} style={{ color: uptimeColor }} />
+              </div>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-3xl font-bold leading-none tabular-nums text-foreground">{apiKey ? (uptimeData ? uptime30 : "…") : "–"}</p>
+          <p className="text-[11px] text-muted-foreground leading-tight">{apiKey ? (avgMs ? `${statusLabel} · ${avgMs}ms` : statusLabel) : "Sambungkan UptimeRobot"}</p>
+        </CardContent>
+      </Card>
+
       </div>
 
       {/* ── Row 2: Chart 60% + Traffic 40% ── */}
       <div className="grid grid-cols-5 gap-3">
-        <SectionCard className="col-span-3">
-          <CardTitle title={`Revenue Trend — ${rangeLabel}`} sub="WooCommerce live" />
+        <Card className="col-span-3">
+        <CardHeader>
+          <CardTitle>Revenue Trend — ${rangeLabel}</CardTitle>
+        </CardHeader>
+          <CardContent>
           {weeklyData.length > 0 ? (
             <AreaChartWrapper data={weeklyData} series={[{ key: "rev", name: "Revenue", color: TEAL }]}
               height={180} formatter={formatRpCompact} />
@@ -258,10 +259,14 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
               <p className="text-[12px] text-muted-foreground">Belum ada data transaksi</p>
             </div>
           )}
-        </SectionCard>
+          </CardContent>
+        </Card>
 
-        <SectionCard className="col-span-2">
-          <CardTitle title="Traffic Source" sub={rangeLabel} />
+        <Card className="col-span-2">
+        <CardHeader>
+        <CardTitle>Traffic Source</CardTitle>
+        </CardHeader>
+        <CardContent>
           <div style={{ height: "160px" }} className="w-full mt-1">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
@@ -292,14 +297,16 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </SectionCard>
+          </CardContent>
+        </Card>
       </div>
 
       {/* ── Row 3: GA4 + GSC ── */}
       {(ga4PropertyId || gscSiteUrl) && (
         <div className="grid grid-cols-2 gap-3">
           {ga4PropertyId && (
-            <SectionCard>
+            <Card>
+            <CardContent>
               <p className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: TEAL }}>
                 Google Analytics 4 · {rangeLabel}
               </p>
@@ -320,10 +327,12 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
                   </div>
                 ))}
               </div>
-            </SectionCard>
+              </CardContent>
+            </Card>
           )}
           {gscSiteUrl && (
-            <SectionCard>
+            <Card>
+            <CardContent>
               <p className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-4" style={{ color: TEAL }}>
                 Search Console · {rangeLabel}
               </p>
@@ -344,15 +353,19 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
                   </div>
                 ))}
               </div>
-            </SectionCard>
+            </CardContent>
+            </Card>
           )}
         </div>
       )}
 
       {/* ── Row 4: Top Produk + Keywords + Pages ── */}
       <div className="grid grid-cols-3 gap-3">
-        <SectionCard>
-          <CardTitle title="Top Produk" sub={rangeLabel} />
+        <Card>
+          <CardHeader>
+            <CardTitle>Top Produk</CardTitle>
+            </CardHeader>
+          <CardContent>
           {products.length === 0 ? (
             <p className="text-[12px] text-muted-foreground">Belum ada data</p>
           ) : (
@@ -367,7 +380,7 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
                       <span className="text-[12px] text-foreground truncate">{p.name}</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <TrendBadge value={p.change} />
+                      {p.change != null && <BadgeDelta deltaType={deltaType(p.change)}>{`${p.change}%`}</BadgeDelta>}
                       <span className="text-[12px] font-semibold tabular-nums" style={{ color: TEAL }}>
                         {formatRpCompact(p.revenue)}
                       </span>
@@ -381,10 +394,14 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
               ))}
             </div>
           )}
-        </SectionCard>
+          </CardContent>
+        </Card>
 
-        <SectionCard>
-          <CardTitle title="Top Keywords" sub={`GSC · ${rangeLabel}`} />
+        <Card>
+          <CardHeader>
+          <CardTitle>Top Keywords</CardTitle>
+          </CardHeader>
+          <CardContent>
           {gscData.keywords.length === 0 ? (
             <p className="text-[12px] text-muted-foreground">Sambungkan Search Console</p>
           ) : (
@@ -400,10 +417,13 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
               ))}
             </div>
           )}
-        </SectionCard>
+          </CardContent>
+        </Card>
 
-        <SectionCard>
-          <CardTitle title="Top Pages" sub={`GA4 · ${rangeLabel}`} />
+        <Card>
+        <CardHeader><CardTitle>Top Pages</CardTitle></CardHeader>
+          
+          <CardContent>
           {ga4Data.topPages.length === 0 ? (
             <p className="text-[12px] text-muted-foreground">Sambungkan GA4</p>
           ) : (
@@ -420,11 +440,13 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
               ))}
             </div>
           )}
-        </SectionCard>
+          </CardContent>
+        </Card>
       </div>
 
       {/* ── Row 5: Agent Status ── */}
-      <SectionCard>
+      <Card>
+      <CardContent>
         <div className="flex items-center justify-between mb-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: TEAL }}>
             Agent Status
@@ -445,9 +467,10 @@ export function OverviewTab({ settings, dateRange = "7", onNavigate }) {
                 <p className="text-[10px] text-muted-foreground">{a.lastRun}</p>
               </div>
             </div>
-          ))}
+          ))}\
         </div>
-      </SectionCard>
+        </CardContent>
+      </Card>
 
     </div>
   );
